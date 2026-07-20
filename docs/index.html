@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meadow Vet Care — Chat</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green-900: #0a2e1a;
+    --green-800: #14532d;
+    --green-700: #166534;
+    --green-600: #16a34a;
+    --green-500: #22c55e;
+    --green-400: #4ade80;
+    --green-100: #dcfce7;
+    --cream: #f8f6f0;
+    --stone: #e7e5d8;
+    --text: #1c1917;
+    --text-muted: #78716c;
+    --radius: 16px;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--green-900);
+    color: #fff;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-shrink: 0;
+  }
+
+  .header .logo {
+    width: 44px;
+    height: 44px;
+    background: var(--green-500);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  .header h1 { font-size: 1.15rem; font-weight: 700; }
+  .header .sub { font-size: 0.8rem; color: var(--green-400); margin-top: 1px; }
+  .header .status {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--green-400);
+  }
+  .header .status .dot {
+    width: 8px; height: 8px;
+    background: var(--green-500);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .settings-bar {
+    background: var(--green-800);
+    padding: 0.5rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+
+  .settings-bar label {
+    font-size: 0.75rem;
+    color: var(--green-400);
+    font-weight: 500;
+  }
+
+  .settings-bar input {
+    flex: 1;
+    min-width: 180px;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    background: rgba(0,0,0,0.25);
+    color: #fff;
+    font-size: 0.8rem;
+    font-family: inherit;
+    outline: none;
+  }
+
+  .settings-bar input::placeholder { color: rgba(255,255,255,0.35); }
+  .settings-bar input:focus { border-color: var(--green-500); }
+
+  .mode-toggle {
+    display: flex;
+    gap: 4px;
+    background: rgba(0,0,0,0.25);
+    border-radius: 8px;
+    padding: 3px;
+  }
+
+  .mode-toggle button {
+    padding: 0.3rem 0.75rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    background: transparent;
+    color: rgba(255,255,255,0.5);
+    transition: all 0.15s;
+  }
+
+  .mode-toggle button.active {
+    background: var(--green-600);
+    color: #fff;
+  }
+
+  /* CHAT */
+  .chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.25rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    scroll-behavior: smooth;
+  }
+
+  .msg {
+    max-width: 85%;
+    padding: 0.85rem 1.1rem;
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    line-height: 1.55;
+    animation: fadeIn 0.25s ease;
+    position: relative;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg.bot {
+    align-self: flex-start;
+    background: #fff;
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  .msg.user {
+    align-self: flex-end;
+    background: var(--green-600);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+
+  .msg.bot .name {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--green-600);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .msg.bot strong { color: var(--green-700); }
+
+  .msg.bot .price-tag {
+    display: inline-block;
+    background: var(--green-100);
+    color: var(--green-800);
+    font-weight: 700;
+    padding: 1px 8px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+  }
+
+  .msg.bot .offer-tag {
+    display: inline-block;
+    background: #fef3c7;
+    color: #92400e;
+    font-weight: 600;
+    padding: 1px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    margin-top: 4px;
+  }
+
+  .msg.bot ul { margin: 0.4rem 0 0.4rem 1.2rem; }
+  .msg.bot li { margin-bottom: 0.3rem; }
+
+  .msg.bot .table-wrap {
+    overflow-x: auto;
+    margin: 0.5rem 0;
+  }
+
+  .msg.bot table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }
+
+  .msg.bot th {
+    text-align: left;
+    padding: 0.4rem 0.5rem;
+    background: var(--green-100);
+    color: var(--green-900);
+    font-weight: 600;
+  }
+
+  .msg.bot td {
+    padding: 0.35rem 0.5rem;
+    border-bottom: 1px solid var(--stone);
+  }
+
+  .msg.bot .source-note {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 6px;
+    font-style: italic;
+  }
+
+  /* QUICK BUTTONS */
+  .quick-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    flex-shrink: 0;
+    background: var(--cream);
+    border-top: 1px solid var(--stone);
+  }
+
+  .quick-buttons button {
+    padding: 0.45rem 1rem;
+    border: 1.5px solid var(--stone);
+    border-radius: 20px;
+    background: #fff;
+    color: var(--text);
+    font-size: 0.8rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .quick-buttons button:hover {
+    border-color: var(--green-500);
+    color: var(--green-700);
+    background: var(--green-100);
+  }
+
+  .quick-buttons button:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  /* INPUT */
+  .input-bar {
+    display: flex;
+    gap: 0.6rem;
+    padding: 0.75rem 1rem;
+    flex-shrink: 0;
+    background: #fff;
+    border-top: 1px solid var(--stone);
+  }
+
+  .input-bar input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: 1.5px solid var(--stone);
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    outline: none;
+    background: var(--cream);
+    transition: border-color 0.15s;
+  }
+
+  .input-bar input:focus { border-color: var(--green-500); }
+
+  .input-bar button {
+    padding: 0.75rem 1.25rem;
+    border: none;
+    border-radius: 12px;
+    background: var(--green-600);
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+
+  .input-bar button:hover { background: var(--green-700); }
+  .input-bar button:active { transform: scale(0.97); }
+  .input-bar button:disabled { background: #ccc; cursor: default; }
+
+  .typing {
+    align-self: flex-start;
+    background: #fff;
+    padding: 0.85rem 1.1rem;
+    border-radius: var(--radius);
+    border-bottom-left-radius: 4px;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .typing span {
+    width: 8px; height: 8px;
+    background: var(--green-400);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes bounce {
+    0%,60%,100% { transform: translateY(0); }
+    30% { transform: translateY(-6px); }
+  }
+
+  .welcome {
+    text-align: center;
+    padding: 2rem 1rem 1rem;
+    color: var(--text-muted);
+  }
+
+  .welcome h2 {
+    font-size: 1.3rem;
+    color: var(--green-800);
+    margin-bottom: 0.5rem;
+  }
+
+  .welcome p { font-size: 0.9rem; line-height: 1.5; }
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 600px) {
+    .msg { max-width: 92%; }
+    .settings-bar { flex-direction: column; align-items: stretch; }
+    .settings-bar input { min-width: unset; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">MV</div>
+  <div>
+    <h1>Meadow Vet Care</h1>
+    <div class="sub">Modern Irish Veterinary Clinic</div>
+  </div>
+  <div class="status">
+    <span class="dot"></span>
+    <span id="statusText">Loading data...</span>
+  </div>
+</div>
+
+<div class="settings-bar" id="settingsBar">
+  <label>API Key</label>
+  <input type="text" id="apiKeyInput" placeholder="OpenRouter or OpenAI key (optional)">
+  <div class="mode-toggle">
+    <button id="modeSmart" class="active">Smart</button>
+    <button id="modeLLM">LLM</button>
+  </div>
+</div>
+
+<div class="chat" id="chat">
+  <div class="welcome" id="welcome">
+    <h2>🐾 Welcome to Meadow Vet Care</h2>
+    <p>Ask me anything about our services, pricing, availability, or book an appointment.<br>I have live access to the clinic's full service list.</p>
+  </div>
+</div>
+
+<div class="quick-buttons" id="quickBtns">
+  <button data-q="What services do you offer for dogs?">🐕 Dog services</button>
+  <button data-q="How much is a cat vaccination?">💉 Cat vaccine price</button>
+  <button data-q="Do you have any discounts or offers?">🏷️ Current offers</button>
+  <button data-q="What are your emergency services?">🚨 Emergency care</button>
+  <button data-q="Show me grooming prices">✂️ Grooming prices</button>
+</div>
+
+<div class="input-bar">
+  <input type="text" id="chatInput" placeholder="Ask about services, pricing, availability..." autofocus>
+  <button id="sendBtn">Send</button>
+</div>
+
+<script>
+  const SHEET_CSV = "https://docs.google.com/spreadsheets/d/1JhSODtviGHzXru6Eb5MhfXfVIF5vtJk3pclzzv7j2l4/export?format=csv&gid=1277715587";
+
+  let services = [];
+  let allDataLoaded = false;
+  let isProcessing = false;
+
+  const chat = document.getElementById('chat');
+  const welcome = document.getElementById('welcome');
+  const chatInput = document.getElementById('chatInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const statusText = document.getElementById('statusText');
+  const apiKeyInput = document.getElementById('apiKeyInput');
+  const modeSmart = document.getElementById('modeSmart');
+  const modeLLM = document.getElementById('modeLLM');
+
+  let useLLM = false;
+
+  modeSmart.addEventListener('click', () => { modeSmart.classList.add('active'); modeLLM.classList.remove('active'); useLLM = false; });
+  modeLLM.addEventListener('click', () => { modeLLM.classList.add('active'); modeSmart.classList.remove('active'); useLLM = true; });
+
+  async function loadData() {
+    try {
+      const res = await fetch(SHEET_CSV);
+      const text = await res.text();
+      const lines = text.trim().split('\n');
+      const headers = parseCSVLine(lines[0]);
+
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        const cols = parseCSVLine(lines[i]);
+        const row = {};
+        headers.forEach((h, idx) => row[h.trim()] = (cols[idx] || '').trim());
+        services.push(row);
+      }
+
+      allDataLoaded = true;
+      statusText.textContent = `Live · ${services.length} services`;
+      document.querySelectorAll('.quick-buttons button').forEach(b => b.disabled = false);
+    } catch (e) {
+      statusText.textContent = '⚠️ Data load failed';
+      addBotMsg("I couldn't load the clinic data. Please check the internet connection and refresh.", true);
+    }
+  }
+
+  function parseCSVLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') { inQuotes = !inQuotes; continue; }
+      if (ch === ',' && !inQuotes) { result.push(current); current = ''; continue; }
+      current += ch;
+    }
+    result.push(current);
+    return result;
+  }
+
+  function addBotMsg(html, isError = false) {
+    welcome.classList.add('hidden');
+    const div = document.createElement('div');
+    div.className = 'msg bot';
+    if (isError) div.style.borderLeft = '3px solid #ef4444';
+    div.innerHTML = `<div class="name">Meadow Vet Assistant</div>${html}`;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function addUserMsg(text) {
+    welcome.classList.add('hidden');
+    const div = document.createElement('div');
+    div.className = 'msg user';
+    div.textContent = text;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function showTyping() {
+    const div = document.createElement('div');
+    div.className = 'typing';
+    div.id = 'typing';
+    div.innerHTML = '<span></span><span></span><span></span>';
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function hideTyping() {
+    const el = document.getElementById('typing');
+    if (el) el.remove();
+  }
+
+  function serviceToHTML(s) {
+    let html = `<strong>${s.service_name}</strong>`;
+    const price = parseFloat(s.price_eur);
+    if (!isNaN(price)) {
+      const eur = (price / 100).toLocaleString('en-IE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+      html += ` · <span class="price-tag">${eur}</span>`;
+    }
+    html += ` · ${s.duration_min} min`;
+    if (s.slots_this_week > 0) {
+      html += ` · ${s.slots_this_week} slot${s.slots_this_week > 1 ? 's' : ''} available`;
+    } else {
+      html += ` · <span style="color:#ef4444;">sold out this week</span>`;
+    }
+    if (s.special_offer) {
+      html += `<div class="offer-tag">${s.special_offer}</div>`;
+    }
+    return html;
+  }
+
+  function smartReply(query) {
+    const q = query.toLowerCase().trim();
+    const words = q.split(/\s+/);
+
+    function matchSpecies(words) {
+      const map = { dog: 'Dog', dogs: 'Dog', puppy: 'Dog', puppies: 'Dog', cat: 'Cat', cats: 'Cat', kitten: 'Cat', rabbit: 'Rabbit', rabbits: 'Rabbit', bunny: 'Rabbit', bird: 'Bird', birds: 'Bird', 'small mammal': 'Small mammal', 'small mammals': 'Small mammal', hamster: 'Small mammal', guinea: 'Small mammal', gerbil: 'Small mammal', rat: 'Small mammal', mouse: 'Small mammal' };
+      for (const w of words) { if (map[w]) return map[w]; }
+      return null;
+    }
+
+    function matchCategory(words) {
+      const map = {
+        consultation: 'Consultation', consult: 'Consultation', appointment: 'Consultation',
+        dental: 'Dental', teeth: 'Dental', tooth: 'Dental', extraction: 'Dental', scale: 'Dental', polish: 'Dental',
+        surgery: 'Surgery', surgical: 'Surgery', operation: 'Surgery', neuter: 'Surgery', neutering: 'Surgery', spay: 'Surgery', castrate: 'Surgery', lump: 'Surgery', wound: 'Surgery',
+        emergency: 'Emergency', urgent: 'Emergency', 'out-of-hours': 'Emergency',
+        vaccination: 'Vaccination', vaccine: 'Vaccination', vaccinate: 'Vaccination', jab: 'Vaccination', shot: 'Vaccination', rabies: 'Vaccination', kennel: 'Vaccination', myxomatosis: 'Vaccination', rvhd: 'Vaccination',
+        grooming: 'Grooming', groom: 'Grooming', bath: 'Grooming', brush: 'Grooming', nail: 'Grooming', clip: 'Grooming', de-shed: 'Grooming', shedding: 'Grooming',
+        behaviour: 'Behaviour', behavior: 'Behaviour', training: 'Behaviour', socialisation: 'Behaviour', socialization: 'Behaviour',
+        diagnostic: 'Diagnostics', diagnosis: 'Diagnostics', xray: 'Diagnostics', x-ray: 'Diagnostics', ultrasound: 'Diagnostics', blood: 'Diagnostics', urine: 'Diagnostics', test: 'Diagnostics', scan: 'Diagnostics',
+        preventive: 'Preventive', prevention: 'Preventive', wellness: 'Preventive', check: 'Preventive', flea: 'Preventive', tick: 'Preventive', worm: 'Preventive',
+        nutrition: 'Nutrition', diet: 'Nutrition', weight: 'Nutrition', food: 'Nutrition',
+        microchip: 'Microchip & ID', microchipping: 'Microchip & ID', passport: 'Microchip & ID', travel: 'Microchip & ID', chip: 'Microchip & ID', id: 'Microchip & ID',
+        'end-of-life': 'End-of-life', euthanasia: 'End-of-life', hospice: 'End-of-life', palliative: 'End-of-life', 'quality of life': 'End-of-life'
+      };
+      for (const w of words) { if (map[w]) return map[w]; }
+      return null;
+    }
+
+    function filterServices(species, category) {
+      return services.filter(s => {
+        if (species && s.species !== species) return false;
+        if (category && s.category !== category) return false;
+        return true;
+      });
+    }
+
+    function formatPrice(cents) {
+      return (cents / 100).toLocaleString('en-IE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
+
+    function buildServiceList(list, title) {
+      if (list.length === 0) return null;
+      let html = `<strong>${title}</strong><div class="table-wrap"><table><tr><th>Service</th><th>Price</th><th>Duration</th><th>Available</th></tr>`;
+      for (const s of list) {
+        const price = parseFloat(s.price_eur);
+        const priceStr = !isNaN(price) ? formatPrice(price) : '—';
+        const avail = parseInt(s.slots_this_week) > 0 ? `${s.slots_this_week} slots` : '<span style="color:#ef4444;">Sold out</span>';
+        html += `<tr><td>${s.service_name}</td><td>${priceStr}</td><td>${s.duration_min} min</td><td>${avail}</td></tr>`;
+      }
+      html += '</table></div>';
+      const offers = list.filter(s => s.special_offer);
+      if (offers.length > 0) {
+        html += '<div style="margin-top:6px;">';
+        for (const o of offers) {
+          html += `<div class="offer-tag">✨ ${o.service_name}: ${o.special_offer}</div>`;
+        }
+        html += '</div>';
+      }
+      return html;
+    }
+
+    const species = matchSpecies(words);
+    const category = matchCategory(words);
+
+    let html = '';
+
+    const qwords = ['hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening'];
+    if (qwords.some(w => q.includes(w))) {
+      html = 'Hello! 👋 Welcome to Meadow Vet Care. I can help you with:\n<ul><li>Service prices and details</li><li>Availability and booking</li><li>Current offers and discounts</li><li>Species-specific care info</li></ul>\nJust ask me anything about our clinic!';
+      return html;
+    }
+
+    if (q.includes('hours') || q.includes('open') || q.includes('when') || q.includes('location') || q.includes('address') || q.includes('phone') || q.includes('contact')) {
+      html = 'Here are our clinic details:\n<ul>';
+      html += '<li><strong>📍 Address:</strong> Meadow Vet Care, Dublin, Ireland</li>';
+      html += '<li><strong>🕐 Hours:</strong> Mon–Fri 8:30am–7pm · Sat 9am–5pm · Emergency 24/7</li>';
+      html += '<li><strong>📞 Phone:</strong> +353 (0)1 234 5678</li>';
+      html += '<li><strong>📧 Email:</strong> hello@meadowvetcare.ie</li></ul>';
+      html += '<div class="source-note">Emergency services available 24/7 with no appointment needed.</div>';
+      return html;
+    }
+
+    if (q.includes('offer') || q.includes('discount') || q.includes('deal') || q.includes('sale') || q.includes('promo') || q.includes('save') || q.includes('special')) {
+      const offers = services.filter(s => s.special_offer && s.special_offer.length > 0);
+      if (offers.length > 0) {
+        html = `<strong>🏷️ Current Offers & Discounts</strong><div class="table-wrap"><table><tr><th>Service</th><th>Species</th><th>Price</th><th>Offer</th></tr>`;
+        for (const s of offers) {
+          const price = parseFloat(s.price_eur);
+          const priceStr = !isNaN(price) ? formatPrice(price) : '—';
+          html += `<tr><td>${s.service_name}</td><td>${s.species}</td><td>${priceStr}</td><td><span class="offer-tag">${s.special_offer}</span></td></tr>`;
+        }
+        html += '</table></div>';
+        html += '<div class="source-note">Book soon — offers and availability change weekly.</div>';
+      } else {
+        html = 'There are no special offers available this week. Check back soon!';
+      }
+      return html;
+    }
+
+    if (q.includes('all') || q.includes('everything') || q.includes('list') || q.includes('service') || q.includes('offer') && !q.includes('special')) {
+      const cats = [...new Set(services.map(s => s.category))];
+      html = `We offer <strong>${services.length} services</strong> across ${cats.length} categories: <strong>${cats.join(', ')}</strong>.\n\n`;
+      for (const cat of cats) {
+        const catServices = services.filter(s => s.category === cat);
+        html += `<strong>${cat}</strong> (${catServices.length} services)`;
+        const prices = catServices.map(s => parseFloat(s.price_eur)).filter(p => !isNaN(p));
+        if (prices.length > 0) {
+          const min = Math.min(...prices);
+          const max = Math.max(...prices);
+          html += ` · ${formatPrice(min)} – ${formatPrice(max)}`;
+        }
+        html += '\n';
+      }
+      html += '\n<div class="source-note">Which species or service are you interested in? I can give you full details.</div>';
+      return html;
+    }
+
+    if (species && category) {
+      const list = filterServices(species, category);
+      if (list.length > 0) {
+        html = buildServiceList(list, `${category} for ${species}`);
+      } else {
+        html = `We don't currently offer <strong>${category}</strong> for <strong>${species}</strong>. Would you like to check other species or categories?`;
+      }
+      return html;
+    }
+
+    if (species) {
+      const list = filterServices(species, null);
+      if (list.length > 0) {
+        const cats = [...new Set(list.map(s => s.category))];
+        html = `Here are all services for <strong>${species}</strong> (${list.length} services):\n<div class="table-wrap"><table><tr><th>Category</th><th>Service</th><th>Price</th><th>Slots</th></tr>`;
+        for (const s of list) {
+          const price = parseFloat(s.price_eur);
+          const priceStr = !isNaN(price) ? formatPrice(price) : '—';
+          html += `<tr><td>${s.category}</td><td>${s.service_name}</td><td>${priceStr}</td><td>${s.slots_this_week > 0 ? s.slots_this_week : '❌'}</td></tr>`;
+        }
+        html += '</table></div>';
+        const offers = list.filter(s => s.special_offer);
+        if (offers.length > 0) {
+          html += '<div style="margin-top:6px;"><strong>✨ Special offers:</strong></div>';
+          for (const o of offers) html += `<div class="offer-tag">${o.service_name}: ${o.special_offer}</div>`;
+        }
+      } else {
+        html = `Hmm, I don't see services for <strong>${species}</strong> in our current list. We mainly serve dogs, cats, rabbits, birds, and small mammals.`;
+      }
+      return html;
+    }
+
+    if (category) {
+      const list = filterServices(null, category);
+      if (list.length > 0) {
+        html = buildServiceList(list, `${category} Services`);
+      } else {
+        html = `We don't seem to have services in the <strong>${category}</strong> category right now.`;
+      }
+      return html;
+    }
+
+    if (q.includes('cheapest') || q.includes('cheap') || q.includes('affordable') || q.includes('lowest') || q.includes('best value')) {
+      const sorted = [...services].filter(s => !isNaN(parseFloat(s.price_eur))).sort((a, b) => parseFloat(a.price_eur) - parseFloat(b.price_eur));
+      const top5 = sorted.slice(0, 5);
+      html = `Our most affordable services:\n<div class="table-wrap"><table><tr><th>Service</th><th>Species</th><th>Price</th></tr>`;
+      for (const s of top5) {
+        html += `<tr><td>${s.service_name}</td><td>${s.species}</td><td>${formatPrice(parseFloat(s.price_eur))}</td></tr>`;
+      }
+      html += '</table></div>';
+      return html;
+    }
+
+    html = `I'm not sure I understood that. Here's what I can help with:\n<ul><li><strong>"What services do you have for dogs?"</strong> — list all dog services</li><li><strong>"How much is a cat vaccination?"</strong> — specific pricing</li><li><strong>"Do you have any offers?"</strong> — current discounts</li><li><strong>"What are your emergency services?"</strong> — emergency care info</li><li>Or type any service, species, or category name!</li></ul>`;
+    return html;
+  }
+
+  async function llmReply(query) {
+    const key = apiKeyInput.value.trim();
+    if (!key) {
+      return "Please enter an API key in the settings bar above to use LLM mode. Or switch back to Smart mode.";
+    }
+
+    const context = services.slice(0, 50).map(s =>
+      `- ${s.service_name} (${s.category}, ${s.species}) · €${(parseFloat(s.price_eur)/100).toLocaleString()} · ${s.duration_min}min · ${s.slots_this_week} slots · ${s.availability}${s.special_offer ? ' · OFFER: '+s.special_offer : ''}`
+    ).join('\n');
+
+    const systemPrompt = `You are Meadow Vet Assistant, a helpful chatbot for Meadow Vet Care, a modern Irish veterinary clinic in Dublin. You have LIVE data about their 90+ services.
+
+Current service data:
+${context}
+
+Rules:
+- Answer naturally and conversationally in English.
+- Use Irish pricing (€ euro). Convert prices from cents: divide by 100.
+- Always mention availability (slots this week). If 0 slots, say "sold out this week".
+- Highlight any special offers.
+- Be warm and professional.
+- If the user asks something not in the data, say you don't have that info and suggest asking about services.`;
+
+    try {
+      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'mistralai/mistral-7b-instruct',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: query }
+          ],
+          max_tokens: 600,
+        })
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        if (res.status === 401) return "Invalid API key. Check your key and try again.";
+        return `API error (${res.status}). ${errText.slice(0, 100)}`;
+      }
+
+      const data = await res.json();
+      const reply = data.choices?.[0]?.message?.content || "I couldn't generate a response.";
+      return reply.replace(/\n/g, '<br>');
+    } catch (e) {
+      return `Connection error: ${e.message}`;
+    }
+  }
+
+  async function handleMessage(text) {
+    if (isProcessing || !text.trim()) return;
+    isProcessing = true;
+    sendBtn.disabled = true;
+
+    addUserMsg(text);
+    showTyping();
+
+    try {
+      let reply;
+      if (useLLM) {
+        reply = await llmReply(text);
+      } else {
+        await new Promise(r => setTimeout(r, 400));
+        reply = smartReply(text);
+      }
+      hideTyping();
+      addBotMsg(reply);
+    } catch (e) {
+      hideTyping();
+      addBotMsg(`Sorry, something went wrong: ${e.message}`, true);
+    }
+
+    isProcessing = false;
+    sendBtn.disabled = false;
+    chatInput.focus();
+  }
+
+  sendBtn.addEventListener('click', () => {
+    const val = chatInput.value.trim();
+    if (val) { chatInput.value = ''; handleMessage(val); }
+  });
+  chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendBtn.click();
+    }
+  });
+
+  document.querySelectorAll('.quick-buttons button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      chatInput.value = btn.dataset.q;
+      handleMessage(btn.dataset.q);
+    });
+  });
+
+  loadData();
+</script>
+</body>
+</html>
