@@ -379,8 +379,8 @@
 </div>
 
 <div class="settings-bar" id="settingsBar">
-  <label>API Key</label>
-  <input type="text" id="apiKeyInput" placeholder="OpenRouter or OpenAI key (optional)">
+  <label>🔑 LLM Key</label>
+  <input type="password" id="apiKeyInput" placeholder="API key (pre-filled)" style="flex:0.8">
   <div class="mode-toggle">
     <button id="modeSmart" class="active">Smart</button>
     <button id="modeLLM">LLM</button>
@@ -423,7 +423,11 @@
   const modeSmart = document.getElementById('modeSmart');
   const modeLLM = document.getElementById('modeLLM');
 
-  let useLLM = false;
+  apiKeyInput.value = "sk-tAVo3W1FnM2kEYi3xFLW7hOaceQmYjQ6Eg7KyW6DRp3PQreYshtvR8i0sq02OdFC";
+
+  let useLLM = true;
+  modeLLM.classList.add('active');
+  modeSmart.classList.remove('active');
 
   modeSmart.addEventListener('click', () => { modeSmart.classList.add('active'); modeLLM.classList.remove('active'); useLLM = false; });
   modeLLM.addEventListener('click', () => { modeLLM.classList.add('active'); modeSmart.classList.remove('active'); useLLM = true; });
