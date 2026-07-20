@@ -1,0 +1,16 @@
+{
+  "name": "meadow-vet-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Meadow Vet Care clinic data",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0"
+  }
+}
