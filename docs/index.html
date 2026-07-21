@@ -585,7 +585,7 @@ User question: ${query}`;
 
       if (!res.ok) {
         if (res.status === 403 || res.status === 401) return "Invalid API key. Get a free key at aistudio.google.com/apikey";
-        if (res.status === 429) return "Too many requests — free API is rate-limited. Switch to Instant mode or wait a moment.";
+        if (res.status === 429) return "The free API is temporarily rate-limited. Please wait a moment and try again.";
         return `API error (${res.status})`;
       }
 
