@@ -81,57 +81,7 @@
     padding: 0.5rem 1.5rem;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
     flex-shrink: 0;
-    flex-wrap: wrap;
-  }
-
-  .settings-bar label {
-    font-size: 0.75rem;
-    color: var(--green-400);
-    font-weight: 500;
-  }
-
-  .settings-bar input {
-    flex: 1;
-    min-width: 180px;
-    padding: 0.4rem 0.75rem;
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 8px;
-    background: rgba(0,0,0,0.25);
-    color: #fff;
-    font-size: 0.8rem;
-    font-family: inherit;
-    outline: none;
-  }
-
-  .settings-bar input::placeholder { color: rgba(255,255,255,0.35); }
-  .settings-bar input:focus { border-color: var(--green-500); }
-
-  .mode-toggle {
-    display: flex;
-    gap: 4px;
-    background: rgba(0,0,0,0.25);
-    border-radius: 8px;
-    padding: 3px;
-  }
-
-  .mode-toggle button {
-    padding: 0.3rem 0.75rem;
-    border: none;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-family: inherit;
-    font-weight: 500;
-    cursor: pointer;
-    background: transparent;
-    color: rgba(255,255,255,0.5);
-    transition: all 0.15s;
-  }
-
-  .mode-toggle button.active {
-    background: var(--green-600);
-    color: #fff;
   }
 
   /* CHAT */
@@ -359,8 +309,6 @@
 
   @media (max-width: 600px) {
     .msg { max-width: 92%; }
-    .settings-bar { flex-direction: column; align-items: stretch; }
-    .settings-bar input { min-width: unset; }
   }
 </style>
 </head>
@@ -378,13 +326,9 @@
   </div>
 </div>
 
-<div class="settings-bar" id="settingsBar">
-  <label>🔑 Gemini Key</label>
-  <input type="password" id="apiKeyInput" placeholder="Paste your Google AI Studio key here" style="flex:0.8">
-  <div class="mode-toggle">
-    <button id="modeSmart" class="active">⚡ Instant</button>
-    <button id="modeLLM">🤖 Gemini AI</button>
-  </div>
+<div class="settings-bar">
+  <span style="color:var(--green-400);font-size:0.75rem;">🧠 Powered by Google Gemini AI</span>
+  <span style="margin-left:auto;font-size:0.75rem;color:var(--green-400);" id="refreshStatus">Data live from Google Sheet</span>
 </div>
 
 <div class="chat" id="chat">
@@ -517,18 +461,7 @@ MVC-079,Grooming,Rabbit,18,15,No,Mon-Sat,2,,Nail clipping,"A calm, gentle groomi
   const modeSmart = document.getElementById('modeSmart');
   const modeLLM = document.getElementById('modeLLM');
 
-  const defaultKey = atob("QVEuQWI4Uk42SjBEc25tS3dIMW91LTRtb21kcklCTU9KaXk3TjFzbkpxMXgwUXBFU2V4RkE=");
-  apiKeyInput.value = localStorage.getItem('mv_api_key') || defaultKey;
-  let useLLM = true;
-  modeLLM.classList.add('active');
-  modeSmart.classList.remove('active');
-
-  apiKeyInput.addEventListener('input', () => {
-    localStorage.setItem('mv_api_key', apiKeyInput.value);
-  });
-
-  modeSmart.addEventListener('click', () => { modeSmart.classList.add('active'); modeLLM.classList.remove('active'); useLLM = false; });
-  modeLLM.addEventListener('click', () => { modeLLM.classList.add('active'); modeSmart.classList.remove('active'); useLLM = true; });
+  const API_KEY = atob("QVEuQWI4Uk42SjBEc25tS3dIMW91LTRtb21kcklCTU9KaXk3TjFzbkpxMXgwUXBFU2V4RkE=");
 
   function parseCSVText(csv) {
     const lines = csv.trim().split('\n');
@@ -545,8 +478,26 @@ MVC-079,Grooming,Rabbit,18,15,No,Mon-Sat,2,,Nail clipping,"A calm, gentle groomi
   }
 
   services = parseCSVText(EMBEDDED_CSV);
+  const refreshStatus = document.getElementById('refreshStatus');
   statusText.textContent = `Live · ${services.length} services`;
   document.querySelectorAll('.quick-buttons button').forEach(b => b.disabled = false);
+
+  async function refreshData() {
+    try {
+      const res = await fetch("https://docs.google.com/spreadsheets/d/1JhSODtviGHzXru6Eb5MhfXfVIF5vtJk3pclzzv7j2l4/export?format=csv&gid=1277715587");
+      if (res.ok) {
+        const text = await res.text();
+        const fresh = parseCSVText(text);
+        if (fresh.length > 0) {
+          services = fresh;
+          statusText.textContent = `Live · ${services.length} services`;
+          refreshStatus.textContent = 'Refreshed from Google Sheet';
+        }
+      }
+    } catch (_) {}
+    setTimeout(refreshData, 60000);
+  }
+  setTimeout(refreshData, 3000);
 
   function parseCSVLine(line) {
     const result = [];
@@ -595,205 +546,9 @@ MVC-079,Grooming,Rabbit,18,15,No,Mon-Sat,2,,Nail clipping,"A calm, gentle groomi
     if (el) el.remove();
   }
 
-  function serviceToHTML(s) {
-    let html = `<strong>${s.service_name}</strong>`;
-    const price = parseFloat(s.price_eur);
-    if (!isNaN(price)) {
-      const eur = (price / 100).toLocaleString('en-IE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 });
-      html += ` · <span class="price-tag">${eur}</span>`;
-    }
-    html += ` · ${s.duration_min} min`;
-    if (s.slots_this_week > 0) {
-      html += ` · ${s.slots_this_week} slot${s.slots_this_week > 1 ? 's' : ''} available`;
-    } else {
-      html += ` · <span style="color:#ef4444;">sold out this week</span>`;
-    }
-    if (s.special_offer) {
-      html += `<div class="offer-tag">${s.special_offer}</div>`;
-    }
-    return html;
-  }
 
-  function smartReply(query) {
-    const q = query.toLowerCase().trim();
-    const words = q.split(/\s+/);
-
-    function matchSpecies(words) {
-      const map = { dog: 'Dog', dogs: 'Dog', puppy: 'Dog', puppies: 'Dog', cat: 'Cat', cats: 'Cat', kitten: 'Cat', rabbit: 'Rabbit', rabbits: 'Rabbit', bunny: 'Rabbit', bird: 'Bird', birds: 'Bird', 'small mammal': 'Small mammal', 'small mammals': 'Small mammal', hamster: 'Small mammal', guinea: 'Small mammal', gerbil: 'Small mammal', rat: 'Small mammal', mouse: 'Small mammal' };
-      for (const w of words) { if (map[w]) return map[w]; }
-      return null;
-    }
-
-    function matchCategory(words) {
-      const map = {
-        consultation: 'Consultation', consult: 'Consultation', appointment: 'Consultation',
-        dental: 'Dental', teeth: 'Dental', tooth: 'Dental', extraction: 'Dental', scale: 'Dental', polish: 'Dental',
-        surgery: 'Surgery', surgical: 'Surgery', operation: 'Surgery', neuter: 'Surgery', neutering: 'Surgery', spay: 'Surgery', castrate: 'Surgery', lump: 'Surgery', wound: 'Surgery',
-        emergency: 'Emergency', urgent: 'Emergency', 'out-of-hours': 'Emergency',
-        vaccination: 'Vaccination', vaccine: 'Vaccination', vaccinate: 'Vaccination', jab: 'Vaccination', shot: 'Vaccination', rabies: 'Vaccination', kennel: 'Vaccination', myxomatosis: 'Vaccination', rvhd: 'Vaccination',
-        grooming: 'Grooming', groom: 'Grooming', bath: 'Grooming', brush: 'Grooming', nail: 'Grooming', clip: 'Grooming', de-shed: 'Grooming', shedding: 'Grooming',
-        behaviour: 'Behaviour', behavior: 'Behaviour', training: 'Behaviour', socialisation: 'Behaviour', socialization: 'Behaviour',
-        diagnostic: 'Diagnostics', diagnosis: 'Diagnostics', xray: 'Diagnostics', x-ray: 'Diagnostics', ultrasound: 'Diagnostics', blood: 'Diagnostics', urine: 'Diagnostics', test: 'Diagnostics', scan: 'Diagnostics',
-        preventive: 'Preventive', prevention: 'Preventive', wellness: 'Preventive', check: 'Preventive', flea: 'Preventive', tick: 'Preventive', worm: 'Preventive',
-        nutrition: 'Nutrition', diet: 'Nutrition', weight: 'Nutrition', food: 'Nutrition',
-        microchip: 'Microchip & ID', microchipping: 'Microchip & ID', passport: 'Microchip & ID', travel: 'Microchip & ID', chip: 'Microchip & ID', id: 'Microchip & ID',
-        'end-of-life': 'End-of-life', euthanasia: 'End-of-life', hospice: 'End-of-life', palliative: 'End-of-life', 'quality of life': 'End-of-life'
-      };
-      for (const w of words) { if (map[w]) return map[w]; }
-      return null;
-    }
-
-    function filterServices(species, category) {
-      return services.filter(s => {
-        if (species && s.species !== species) return false;
-        if (category && s.category !== category) return false;
-        return true;
-      });
-    }
-
-    function formatPrice(cents) {
-      return (cents / 100).toLocaleString('en-IE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 });
-    }
-
-    function buildServiceList(list, title) {
-      if (list.length === 0) return null;
-      let html = `<strong>${title}</strong><div class="table-wrap"><table><tr><th>Service</th><th>Price</th><th>Duration</th><th>Available</th></tr>`;
-      for (const s of list) {
-        const price = parseFloat(s.price_eur);
-        const priceStr = !isNaN(price) ? formatPrice(price) : '—';
-        const avail = parseInt(s.slots_this_week) > 0 ? `${s.slots_this_week} slots` : '<span style="color:#ef4444;">Sold out</span>';
-        html += `<tr><td>${s.service_name}</td><td>${priceStr}</td><td>${s.duration_min} min</td><td>${avail}</td></tr>`;
-      }
-      html += '</table></div>';
-      const offers = list.filter(s => s.special_offer);
-      if (offers.length > 0) {
-        html += '<div style="margin-top:6px;">';
-        for (const o of offers) {
-          html += `<div class="offer-tag">✨ ${o.service_name}: ${o.special_offer}</div>`;
-        }
-        html += '</div>';
-      }
-      return html;
-    }
-
-    const species = matchSpecies(words);
-    const category = matchCategory(words);
-
-    let html = '';
-
-    const qwords = ['hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening'];
-    if (qwords.some(w => q.includes(w))) {
-      html = 'Hello! 👋 Welcome to Meadow Vet Care. I can help you with:\n<ul><li>Service prices and details</li><li>Availability and booking</li><li>Current offers and discounts</li><li>Species-specific care info</li></ul>\nJust ask me anything about our clinic!';
-      return html;
-    }
-
-    if (q.includes('hours') || q.includes('open') || q.includes('when') || q.includes('location') || q.includes('address') || q.includes('phone') || q.includes('contact')) {
-      html = 'Here are our clinic details:\n<ul>';
-      html += '<li><strong>📍 Address:</strong> Meadow Vet Care, Dublin, Ireland</li>';
-      html += '<li><strong>🕐 Hours:</strong> Mon–Fri 8:30am–7pm · Sat 9am–5pm · Emergency 24/7</li>';
-      html += '<li><strong>📞 Phone:</strong> +353 (0)1 234 5678</li>';
-      html += '<li><strong>📧 Email:</strong> hello@meadowvetcare.ie</li></ul>';
-      html += '<div class="source-note">Emergency services available 24/7 with no appointment needed.</div>';
-      return html;
-    }
-
-    if (q.includes('offer') || q.includes('discount') || q.includes('deal') || q.includes('sale') || q.includes('promo') || q.includes('save') || q.includes('special')) {
-      const offers = services.filter(s => s.special_offer && s.special_offer.length > 0);
-      if (offers.length > 0) {
-        html = `<strong>🏷️ Current Offers & Discounts</strong><div class="table-wrap"><table><tr><th>Service</th><th>Species</th><th>Price</th><th>Offer</th></tr>`;
-        for (const s of offers) {
-          const price = parseFloat(s.price_eur);
-          const priceStr = !isNaN(price) ? formatPrice(price) : '—';
-          html += `<tr><td>${s.service_name}</td><td>${s.species}</td><td>${priceStr}</td><td><span class="offer-tag">${s.special_offer}</span></td></tr>`;
-        }
-        html += '</table></div>';
-        html += '<div class="source-note">Book soon — offers and availability change weekly.</div>';
-      } else {
-        html = 'There are no special offers available this week. Check back soon!';
-      }
-      return html;
-    }
-
-    if (q.includes('all') || q.includes('everything') || q.includes('list') || q.includes('service') || q.includes('offer') && !q.includes('special')) {
-      const cats = [...new Set(services.map(s => s.category))];
-      html = `We offer <strong>${services.length} services</strong> across ${cats.length} categories: <strong>${cats.join(', ')}</strong>.\n\n`;
-      for (const cat of cats) {
-        const catServices = services.filter(s => s.category === cat);
-        html += `<strong>${cat}</strong> (${catServices.length} services)`;
-        const prices = catServices.map(s => parseFloat(s.price_eur)).filter(p => !isNaN(p));
-        if (prices.length > 0) {
-          const min = Math.min(...prices);
-          const max = Math.max(...prices);
-          html += ` · ${formatPrice(min)} – ${formatPrice(max)}`;
-        }
-        html += '\n';
-      }
-      html += '\n<div class="source-note">Which species or service are you interested in? I can give you full details.</div>';
-      return html;
-    }
-
-    if (species && category) {
-      const list = filterServices(species, category);
-      if (list.length > 0) {
-        html = buildServiceList(list, `${category} for ${species}`);
-      } else {
-        html = `We don't currently offer <strong>${category}</strong> for <strong>${species}</strong>. Would you like to check other species or categories?`;
-      }
-      return html;
-    }
-
-    if (species) {
-      const list = filterServices(species, null);
-      if (list.length > 0) {
-        const cats = [...new Set(list.map(s => s.category))];
-        html = `Here are all services for <strong>${species}</strong> (${list.length} services):\n<div class="table-wrap"><table><tr><th>Category</th><th>Service</th><th>Price</th><th>Slots</th></tr>`;
-        for (const s of list) {
-          const price = parseFloat(s.price_eur);
-          const priceStr = !isNaN(price) ? formatPrice(price) : '—';
-          html += `<tr><td>${s.category}</td><td>${s.service_name}</td><td>${priceStr}</td><td>${s.slots_this_week > 0 ? s.slots_this_week : '❌'}</td></tr>`;
-        }
-        html += '</table></div>';
-        const offers = list.filter(s => s.special_offer);
-        if (offers.length > 0) {
-          html += '<div style="margin-top:6px;"><strong>✨ Special offers:</strong></div>';
-          for (const o of offers) html += `<div class="offer-tag">${o.service_name}: ${o.special_offer}</div>`;
-        }
-      } else {
-        html = `Hmm, I don't see services for <strong>${species}</strong> in our current list. We mainly serve dogs, cats, rabbits, birds, and small mammals.`;
-      }
-      return html;
-    }
-
-    if (category) {
-      const list = filterServices(null, category);
-      if (list.length > 0) {
-        html = buildServiceList(list, `${category} Services`);
-      } else {
-        html = `We don't seem to have services in the <strong>${category}</strong> category right now.`;
-      }
-      return html;
-    }
-
-    if (q.includes('cheapest') || q.includes('cheap') || q.includes('affordable') || q.includes('lowest') || q.includes('best value')) {
-      const sorted = [...services].filter(s => !isNaN(parseFloat(s.price_eur))).sort((a, b) => parseFloat(a.price_eur) - parseFloat(b.price_eur));
-      const top5 = sorted.slice(0, 5);
-      html = `Our most affordable services:\n<div class="table-wrap"><table><tr><th>Service</th><th>Species</th><th>Price</th></tr>`;
-      for (const s of top5) {
-        html += `<tr><td>${s.service_name}</td><td>${s.species}</td><td>${formatPrice(parseFloat(s.price_eur))}</td></tr>`;
-      }
-      html += '</table></div>';
-      return html;
-    }
-
-    html = `I'm not sure I understood that. Here's what I can help with:\n<ul><li><strong>"What services do you have for dogs?"</strong> — list all dog services</li><li><strong>"How much is a cat vaccination?"</strong> — specific pricing</li><li><strong>"Do you have any offers?"</strong> — current discounts</li><li><strong>"What are your emergency services?"</strong> — emergency care info</li><li>Or type any service, species, or category name!</li></ul>`;
-    return html;
-  }
 
   async function llmReply(query) {
-    const key = apiKeyInput.value.trim();
-    if (!key) {
-      return "Paste your Google AI Studio API key in the settings bar above, then switch to Gemini AI mode!";
-    }
 
     const context = services.slice(0, 60).map(s =>
       `- ${s.service_name} (${s.category}, ${s.species}) · €${(parseFloat(s.price_eur)/100).toLocaleString()} · ${s.duration_min}min · ${s.slots_this_week} slots · ${s.availability}${s.special_offer ? ' · OFFER: '+s.special_offer : ''}`
@@ -817,7 +572,7 @@ User question: ${query}`;
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 20000);
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -852,14 +607,8 @@ User question: ${query}`;
     showTyping();
 
     try {
-      let reply;
-      if (useLLM) {
-        reply = await llmReply(text);
-      } else {
-        await new Promise(r => setTimeout(r, 400));
-        reply = smartReply(text);
-      }
       hideTyping();
+      const reply = await llmReply(text);
       addBotMsg(reply);
     } catch (e) {
       hideTyping();
