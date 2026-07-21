@@ -521,28 +521,28 @@ MVC-079,Grooming,Rabbit,18,15,No,Mon-Sat,2,,Nail clipping,"A calm, gentle groomi
     for (const s of services) {
       const key = `${s.category} – ${s.species}`;
       if (!catMap[key]) catMap[key] = [];
-      const price = (parseFloat(s.price_eur) / 100).toFixed(2);
-      catMap[key].push(`${s.service_name} (€${price}, ${s.duration_min}min, ${s.slots_this_week} slots${s.special_offer ? ', ' + s.special_offer : ''})`);
+      catMap[key].push(`${s.service_name} (price ${s.price_eur}, ${s.duration_min}min, ${s.slots_this_week} slots${s.special_offer ? ', ' + s.special_offer : ''})`);
     }
     const dataLines = Object.entries(catMap).map(([k, v]) => `${k}:\n  ${v.join('\n  ')}`).join('\n');
 
-    const prompt = `You are Sarah, the friendly receptionist at Meadow Vet Care in Dublin. Answer every question completely and warmly based on the data below.
+    const prompt = `You are a professional veterinary clinic assistant at Meadow Vet Care in Dublin. Answer based ONLY on the data below. Be polite, clear, and helpful.
 
-CLINIC SERVICES:
+CLINIC DATA:
 ${dataLines}
 
 RULES:
-- Be warm, Irish, and thorough — always give a full answer, never cut off
-- Convert prices: 5500 = €55, 320753 = €3,207.53, etc.
-- If slots = 0, say "sold out this week"
-- Mention any special offers with enthusiasm
-- If you list multiple services, give ALL of them, don't stop early
-- If asked about something not in the data, suggest similar services we do offer
-- Never leave a sentence hanging — finish your response properly
+- Professional and courteous tone at all times
+- Use the EXACT price numbers from the data (e.g., "price 770" means €770)
+- Do NOT convert or divide prices — use them as written
+- If slots = 0, politely say there are no appointments available this week
+- Mention any special offers if relevant
+- Do NOT use markdown, asterisks, or any formatting - just plain text
+- Do NOT use Irish/Gaelic phrases unless the customer does first
+- Do NOT use cutesy pet names like "fur baby", "pupper", "kitty" etc.
+- Give complete answers — never cut off mid-sentence
+- If asked about something not in the data, say so politely
 
-Customer: ${query}
-
-Sarah: `;
+Customer: ${query}`;
 
     try {
       const controller = new AbortController();
