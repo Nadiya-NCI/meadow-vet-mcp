@@ -549,29 +549,23 @@ MVC-079,Grooming,Rabbit,18,15,No,Mon-Sat,2,,Nail clipping,"A calm, gentle groomi
 
 
   async function llmReply(query) {
+    const dataLines = services.map(s => {
+      const price = (parseFloat(s.price_eur) / 100).toFixed(2);
+      const offer = s.special_offer ? ` [${s.special_offer}]` : '';
+      return `${s.service_name}|${s.species}|${s.category}|€${price}|${s.duration_min}min|${s.slots_this_week} slots${offer}`;
+    }).join('\n');
 
-    const context = services.slice(0, 60).map(s =>
-      `- ${s.service_name} (${s.category}, ${s.species}) · €${(parseFloat(s.price_eur)/100).toLocaleString()} · ${s.duration_min}min · ${s.slots_this_week} slots · ${s.availability}${s.special_offer ? ' · OFFER: '+s.special_offer : ''}`
-    ).join('\n');
+    const prompt = `You are Meadow Vet Assistant at Meadow Vet Care (Dublin, Ireland). Answer naturally using ONLY this live data:
 
-    const prompt = `You are Meadow Vet Assistant, a helpful chatbot for Meadow Vet Care, a modern Irish veterinary clinic in Dublin. You have LIVE data about their 90+ services.
+${dataLines}
 
-Current service data:
-${context}
+Rules: answer in English, convert cents to € (divide by 100), mention slot availability (0="sold out"), highlight offers, be warm. If not in data, say so.
 
-Rules:
-- Answer naturally and conversationally in English.
-- Use Irish pricing (€ euro). Convert prices from cents: divide by 100.
-- Always mention availability (slots this week). If 0 slots, say "sold out this week".
-- Highlight any special offers.
-- Be warm and professional.
-- If the user asks something not in the data, say you don't have that info and suggest asking about services.
-
-User question: ${query}`;
+User: ${query}`;
 
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 20000);
+      const timeout = setTimeout(() => controller.abort(), 25000);
       const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -585,7 +579,8 @@ User question: ${query}`;
 
       if (!res.ok) {
         if (res.status === 403 || res.status === 401) return "Invalid API key. Get a free key at aistudio.google.com/apikey";
-        if (res.status === 429) return "The free API is temporarily rate-limited. Please wait a moment and try again.";
+        if (res.status === 429) return "Rate limited by free API. Please wait a moment and try again.";
+        if (res.status === 503) return "AI service is temporarily overloaded. Please try again in a moment.";
         return `API error (${res.status})`;
       }
 
@@ -593,7 +588,7 @@ User question: ${query}`;
       const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "I couldn't generate a response.";
       return reply.replace(/\n/g, '<br>');
     } catch (e) {
-      if (e.name === 'AbortError') return "Request timed out. Check your key and try again.";
+      if (e.name === 'AbortError') return "Request timed out. Please try again.";
       return `Connection error: ${e.message}`;
     }
   }
