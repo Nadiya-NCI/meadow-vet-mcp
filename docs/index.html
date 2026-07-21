@@ -60,23 +60,10 @@
 
   .header h1 { font-size: 1.15rem; font-weight: 700; }
   .header .sub { font-size: 0.8rem; color: var(--green-400); margin-top: 1px; }
-  .header .status {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.75rem;
-    color: var(--green-400);
-  }
 
 
-  .settings-bar {
-    background: var(--green-800);
-    padding: 0.5rem 1.5rem;
-    display: flex;
-    align-items: center;
-    flex-shrink: 0;
-  }
+
+
 
   /* CHAT */
   .chat {
@@ -314,20 +301,15 @@
     <h1>Meadow Vet Care</h1>
     <div class="sub">Modern Irish Veterinary Clinic</div>
   </div>
-  <div class="status">
-    <span id="statusText">Loading...</span>
-  </div>
+
 </div>
 
-<div class="settings-bar">
-  <span style="color:var(--green-400);font-size:0.75rem;">🧠 Powered by Google Gemini AI</span>
-  <span style="margin-left:auto;font-size:0.75rem;color:var(--green-400);" id="refreshStatus">Data live from Google Sheet</span>
-</div>
+
 
 <div class="chat" id="chat">
   <div class="welcome" id="welcome">
     <h2>🐾 Welcome to Meadow Vet Care</h2>
-    <p>Ask me anything about our services, pricing, availability, or book an appointment.<br>I have live access to the clinic's full service list.</p>
+    <p>Hi there! I'm Sarah — ask me anything about our services, prices, or availability and I'll be happy to help!</p>
   </div>
 </div>
 
@@ -449,7 +431,6 @@ MVC-079,Grooming,Rabbit,18,15,No,Mon-Sat,2,,Nail clipping,"A calm, gentle groomi
   const welcome = document.getElementById('welcome');
   const chatInput = document.getElementById('chatInput');
   const sendBtn = document.getElementById('sendBtn');
-  const statusText = document.getElementById('statusText');
   const apiKeyInput = document.getElementById('apiKeyInput');
   const modeSmart = document.getElementById('modeSmart');
   const modeLLM = document.getElementById('modeLLM');
@@ -471,8 +452,6 @@ MVC-079,Grooming,Rabbit,18,15,No,Mon-Sat,2,,Nail clipping,"A calm, gentle groomi
   }
 
   services = parseCSVText(EMBEDDED_CSV);
-  const refreshStatus = document.getElementById('refreshStatus');
-  statusText.textContent = `${services.length} services loaded`;
   document.querySelectorAll('.quick-buttons button').forEach(b => b.disabled = false);
 
   async function refreshData() {
@@ -481,11 +460,7 @@ MVC-079,Grooming,Rabbit,18,15,No,Mon-Sat,2,,Nail clipping,"A calm, gentle groomi
       if (res.ok) {
         const text = await res.text();
         const fresh = parseCSVText(text);
-        if (fresh.length > 0) {
-          services = fresh;
-          statusText.textContent = `Live · ${services.length} services`;
-          refreshStatus.textContent = 'Refreshed from Google Sheet';
-        }
+        if (fresh.length > 0) services = fresh;
       }
     } catch (_) {}
     setTimeout(refreshData, 60000);
@@ -542,27 +517,32 @@ MVC-079,Grooming,Rabbit,18,15,No,Mon-Sat,2,,Nail clipping,"A calm, gentle groomi
 
 
   async function llmReply(query) {
-    const dataLines = services.map(s => {
+    const catMap = {};
+    for (const s of services) {
+      const key = `${s.category} – ${s.species}`;
+      if (!catMap[key]) catMap[key] = [];
       const price = (parseFloat(s.price_eur) / 100).toFixed(2);
-      const offer = s.special_offer ? ` [${s.special_offer}]` : '';
-      return `${s.service_name}|${s.species}|${s.category}|€${price}|${s.duration_min}min|${s.slots_this_week} slots${offer}`;
-    }).join('\n');
+      catMap[key].push(`${s.service_name} (€${price}, ${s.duration_min}min, ${s.slots_this_week} slots${s.special_offer ? ', ' + s.special_offer : ''})`);
+    }
+    const dataLines = Object.entries(catMap).map(([k, v]) => `${k}:\n  ${v.join('\n  ')}`).join('\n');
 
-    const prompt = `You are Sarah, the friendly receptionist at Meadow Vet Care in Dublin. You have access to our LIVE clinic data below. Answer like a real Irish vet receptionist — warm, chatty, and personal.
+    const prompt = `You are Sarah, the friendly receptionist at Meadow Vet Care in Dublin. Answer every question completely and warmly based on the data below.
 
-Current services:
+CLINIC SERVICES:
 ${dataLines}
 
-Rules:
-- Talk like a real person, not a robot. Use natural Irish warmth ("Sure thing!", "No worries at all", "Let me check...", "Grand so!")
-- Convert prices: divide by 100 for euros (e.g., 5500 = €55)
-- Mention slots: "0 slots" = "sold out this week I'm afraid"
-- Highlight any special offers with a bit of enthusiasm
-- If they ask about something not in the data, suggest what IS available
-- Use dog/cat/rabbit/bird/small mammal names naturally
-- Keep responses concise but friendly — like a quick chat at the front desk
+RULES:
+- Be warm, Irish, and thorough — always give a full answer, never cut off
+- Convert prices: 5500 = €55, 320753 = €3,207.53, etc.
+- If slots = 0, say "sold out this week"
+- Mention any special offers with enthusiasm
+- If you list multiple services, give ALL of them, don't stop early
+- If asked about something not in the data, suggest similar services we do offer
+- Never leave a sentence hanging — finish your response properly
 
-User: ${query}`;
+Customer: ${query}
+
+Sarah: `;
 
     try {
       const controller = new AbortController();
@@ -572,7 +552,7 @@ User: ${query}`;
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 800, temperature: 0.7 },
+          generationConfig: { maxOutputTokens: 1024, temperature: 0.8 },
         }),
         signal: controller.signal,
       });
