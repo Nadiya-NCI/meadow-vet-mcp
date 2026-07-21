@@ -68,13 +68,7 @@
     font-size: 0.75rem;
     color: var(--green-400);
   }
-  .header .status .dot {
-    width: 8px; height: 8px;
-    background: var(--green-500);
-    border-radius: 50%;
-    animation: pulse 2s infinite;
-  }
-  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
 
   .settings-bar {
     background: var(--green-800);
@@ -321,8 +315,7 @@
     <div class="sub">Modern Irish Veterinary Clinic</div>
   </div>
   <div class="status">
-    <span class="dot"></span>
-    <span id="statusText">Loading data...</span>
+    <span id="statusText">Loading...</span>
   </div>
 </div>
 
@@ -479,7 +472,7 @@ MVC-079,Grooming,Rabbit,18,15,No,Mon-Sat,2,,Nail clipping,"A calm, gentle groomi
 
   services = parseCSVText(EMBEDDED_CSV);
   const refreshStatus = document.getElementById('refreshStatus');
-  statusText.textContent = `Live · ${services.length} services`;
+  statusText.textContent = `${services.length} services loaded`;
   document.querySelectorAll('.quick-buttons button').forEach(b => b.disabled = false);
 
   async function refreshData() {
@@ -555,11 +548,19 @@ MVC-079,Grooming,Rabbit,18,15,No,Mon-Sat,2,,Nail clipping,"A calm, gentle groomi
       return `${s.service_name}|${s.species}|${s.category}|€${price}|${s.duration_min}min|${s.slots_this_week} slots${offer}`;
     }).join('\n');
 
-    const prompt = `You are Meadow Vet Assistant at Meadow Vet Care (Dublin, Ireland). Answer naturally using ONLY this live data:
+    const prompt = `You are Sarah, the friendly receptionist at Meadow Vet Care in Dublin. You have access to our LIVE clinic data below. Answer like a real Irish vet receptionist — warm, chatty, and personal.
 
+Current services:
 ${dataLines}
 
-Rules: answer in English, convert cents to € (divide by 100), mention slot availability (0="sold out"), highlight offers, be warm. If not in data, say so.
+Rules:
+- Talk like a real person, not a robot. Use natural Irish warmth ("Sure thing!", "No worries at all", "Let me check...", "Grand so!")
+- Convert prices: divide by 100 for euros (e.g., 5500 = €55)
+- Mention slots: "0 slots" = "sold out this week I'm afraid"
+- Highlight any special offers with a bit of enthusiasm
+- If they ask about something not in the data, suggest what IS available
+- Use dog/cat/rabbit/bird/small mammal names naturally
+- Keep responses concise but friendly — like a quick chat at the front desk
 
 User: ${query}`;
 
