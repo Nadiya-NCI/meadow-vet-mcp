@@ -380,7 +380,7 @@
 
 <div class="settings-bar" id="settingsBar">
   <label>🔑 LLM Key</label>
-  <input type="password" id="apiKeyInput" placeholder="API key (pre-filled)" style="flex:0.8">
+  <input type="password" id="apiKeyInput" placeholder="OpenRouter key for natural language" style="flex:0.8">
   <div class="mode-toggle">
     <button id="modeSmart" class="active">Smart</button>
     <button id="modeLLM">LLM</button>
@@ -423,11 +423,7 @@
   const modeSmart = document.getElementById('modeSmart');
   const modeLLM = document.getElementById('modeLLM');
 
-  apiKeyInput.value = "sk-tAVo3W1FnM2kEYi3xFLW7hOaceQmYjQ6Eg7KyW6DRp3PQreYshtvR8i0sq02OdFC";
-
-  let useLLM = true;
-  modeLLM.classList.add('active');
-  modeSmart.classList.remove('active');
+  let useLLM = false;
 
   modeSmart.addEventListener('click', () => { modeSmart.classList.add('active'); modeLLM.classList.remove('active'); useLLM = false; });
   modeLLM.addEventListener('click', () => { modeLLM.classList.add('active'); modeSmart.classList.remove('active'); useLLM = true; });
@@ -721,22 +717,26 @@ Rules:
 - If the user asks something not in the data, say you don't have that info and suggest asking about services.`;
 
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
       const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'mistralai/mistral-7b-instruct',
+          model: 'mistralai/mistral-7b-instruct:free',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: query }
           ],
           max_tokens: 600,
-        })
+        }),
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
 
       if (!res.ok) {
         const errText = await res.text();
-        if (res.status === 401) return "Invalid API key. Check your key and try again.";
+        if (res.status === 401) return "Invalid API key. Get one free at openrouter.ai/keys";
         return `API error (${res.status}). ${errText.slice(0, 100)}`;
       }
 
@@ -744,6 +744,7 @@ Rules:
       const reply = data.choices?.[0]?.message?.content || "I couldn't generate a response.";
       return reply.replace(/\n/g, '<br>');
     } catch (e) {
+      if (e.name === 'AbortError') return "Request timed out. Check your API key and try again.";
       return `Connection error: ${e.message}`;
     }
   }
