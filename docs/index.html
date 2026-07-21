@@ -379,11 +379,11 @@
 </div>
 
 <div class="settings-bar" id="settingsBar">
-  <label>🔑 LLM Key</label>
-  <input type="password" id="apiKeyInput" placeholder="OpenRouter key for natural language" style="flex:0.8">
+  <label>🔑 Gemini Key</label>
+  <input type="password" id="apiKeyInput" placeholder="Paste your Google AI Studio key here" style="flex:0.8">
   <div class="mode-toggle">
-    <button id="modeSmart" class="active">Smart</button>
-    <button id="modeLLM">LLM</button>
+    <button id="modeSmart" class="active">⚡ Instant</button>
+    <button id="modeLLM">🤖 Gemini AI</button>
   </div>
 </div>
 
@@ -423,7 +423,14 @@
   const modeSmart = document.getElementById('modeSmart');
   const modeLLM = document.getElementById('modeLLM');
 
+  if (localStorage.getItem('mv_api_key')) {
+    apiKeyInput.value = localStorage.getItem('mv_api_key');
+  }
   let useLLM = false;
+
+  apiKeyInput.addEventListener('input', () => {
+    localStorage.setItem('mv_api_key', apiKeyInput.value);
+  });
 
   modeSmart.addEventListener('click', () => { modeSmart.classList.add('active'); modeLLM.classList.remove('active'); useLLM = false; });
   modeLLM.addEventListener('click', () => { modeLLM.classList.add('active'); modeSmart.classList.remove('active'); useLLM = true; });
@@ -696,14 +703,14 @@
   async function llmReply(query) {
     const key = apiKeyInput.value.trim();
     if (!key) {
-      return "Please enter an API key in the settings bar above to use LLM mode. Or switch back to Smart mode.";
+      return "Paste your Google AI Studio API key in the settings bar above, then switch to Gemini AI mode!";
     }
 
-    const context = services.slice(0, 50).map(s =>
+    const context = services.slice(0, 60).map(s =>
       `- ${s.service_name} (${s.category}, ${s.species}) · €${(parseFloat(s.price_eur)/100).toLocaleString()} · ${s.duration_min}min · ${s.slots_this_week} slots · ${s.availability}${s.special_offer ? ' · OFFER: '+s.special_offer : ''}`
     ).join('\n');
 
-    const systemPrompt = `You are Meadow Vet Assistant, a helpful chatbot for Meadow Vet Care, a modern Irish veterinary clinic in Dublin. You have LIVE data about their 90+ services.
+    const prompt = `You are Meadow Vet Assistant, a helpful chatbot for Meadow Vet Care, a modern Irish veterinary clinic in Dublin. You have LIVE data about their 90+ services.
 
 Current service data:
 ${context}
@@ -714,37 +721,35 @@ Rules:
 - Always mention availability (slots this week). If 0 slots, say "sold out this week".
 - Highlight any special offers.
 - Be warm and professional.
-- If the user asks something not in the data, say you don't have that info and suggest asking about services.`;
+- If the user asks something not in the data, say you don't have that info and suggest asking about services.
+
+User question: ${query}`;
 
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000);
-      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      const timeout = setTimeout(() => controller.abort(), 20000);
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'mistralai/mistral-7b-instruct:free',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: query }
-          ],
-          max_tokens: 600,
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 800, temperature: 0.7 },
         }),
         signal: controller.signal,
       });
       clearTimeout(timeout);
 
       if (!res.ok) {
-        const errText = await res.text();
-        if (res.status === 401) return "Invalid API key. Get one free at openrouter.ai/keys";
-        return `API error (${res.status}). ${errText.slice(0, 100)}`;
+        if (res.status === 403 || res.status === 401) return "Invalid API key. Get a free key at aistudio.google.com/apikey";
+        if (res.status === 429) return "Too many requests — free API is rate-limited. Switch to Instant mode or wait a moment.";
+        return `API error (${res.status})`;
       }
 
       const data = await res.json();
-      const reply = data.choices?.[0]?.message?.content || "I couldn't generate a response.";
+      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "I couldn't generate a response.";
       return reply.replace(/\n/g, '<br>');
     } catch (e) {
-      if (e.name === 'AbortError') return "Request timed out. Check your API key and try again.";
+      if (e.name === 'AbortError') return "Request timed out. Check your key and try again.";
       return `Connection error: ${e.message}`;
     }
   }
