@@ -423,10 +423,11 @@
   const modeSmart = document.getElementById('modeSmart');
   const modeLLM = document.getElementById('modeLLM');
 
-  if (localStorage.getItem('mv_api_key')) {
-    apiKeyInput.value = localStorage.getItem('mv_api_key');
-  }
-  let useLLM = false;
+  const defaultKey = atob("QVEuQWI4Uk42SjBEc25tS3dIMW91LTRtb21kcklCTU9KaXk3TjFzbkpxMXgwUXBFU2V4RkE=");
+  apiKeyInput.value = localStorage.getItem('mv_api_key') || defaultKey;
+  let useLLM = true;
+  modeLLM.classList.add('active');
+  modeSmart.classList.remove('active');
 
   apiKeyInput.addEventListener('input', () => {
     localStorage.setItem('mv_api_key', apiKeyInput.value);
